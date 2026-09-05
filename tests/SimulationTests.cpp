@@ -167,7 +167,7 @@ int main()
 
 		config.ramBase   = 0x00000000;
 		config.gpioBase  = 0x00010000;
-		config.timerBase = 0x00020000;
+		config.timers[0].baseAddress = 0x00020000;
 
 		Simulator simulator(config);
 
@@ -182,8 +182,8 @@ int main()
 		assert(bus.read(config.gpioBase) == 0x01);
 
 		// Timer period register
-		bus.write(config.timerBase + 1, 100);
-		assert(bus.read(config.timerBase + 1) == 100);
+		bus.write(config.timers[0].baseAddress + 1, 100);
+		assert(bus.read(config.timers[0].baseAddress + 1) == 100);
 	}
 	
 	// Overlapping memory regions should be rejected.
@@ -377,8 +377,9 @@ int main()
 	{
 		BoardConfig config;
 		config.gpioPins = 2;
-		config.adc.channelCount = 2;
-		config.adc.channelToPin = {
+
+		config.adcs[0].channelCount = 2;
+		config.adcs[0].channelToPin = {
 			0, 1
 		};
 
@@ -689,13 +690,13 @@ int main()
 			simulator.getConfig();
 
 		const std::uint32_t timerPeriod =
-			config.timerBase + 1;
+			config.timers[0].baseAddress + 1;
 
 		const std::uint32_t timerEnable =
-			config.timerBase + 2;
+			config.timers[0].baseAddress + 2;
 
 		const std::uint32_t timerInterruptEnable =
-			config.timerBase + 4;
+			config.timers[0].baseAddress + 4;
 
 		// --------------------------------------------
 		// Normal firmware
@@ -801,6 +802,42 @@ int main()
 		// RETI should have completed, so normal firmware
 		// should also have resumed.
 		assert(cpu.getRegister(0) > 1);
+	}
+	
+	//prove architecture supports multiple independent timers
+	{
+		BoardConfig config;
+
+		config.timers = {
+			TimerConfig{
+				0x00002000,
+				0
+			},
+			TimerConfig{
+				0x00002100,
+				1
+			}
+		};
+
+		Simulator simulator(config);
+		Bus& bus = simulator.getBus();
+
+		// Configure timer 0
+		bus.write(0x00002000 + 1, 3); // PERIOD
+		bus.write(0x00002000 + 2, 1); // ENABLE
+
+		// Configure timer 1
+		bus.write(0x00002100 + 1, 5); // PERIOD
+		bus.write(0x00002100 + 2, 1); // ENABLE
+
+		simulator.advanceCycles(4);
+
+		assert(bus.read(0x00002000 + 3) == 1);
+		assert(bus.read(0x00002100 + 3) == 0);
+
+		simulator.advanceCycles(2);
+
+		assert(bus.read(0x00002100 + 3) == 1);
 	}
 	
 	// Simulation should support independently
@@ -1462,25 +1499,25 @@ int main()
 		
 		simulator.setPinVoltage(0, 2.5);
 		
-		simulator.getBus().write(config.adcBase + 0, 0);
-		simulator.getBus().write(config.adcBase + 1, 1);
+		simulator.getBus().write(config.adcs[0].baseAddress + 0, 0);
+		simulator.getBus().write(config.adcs[0].baseAddress + 1, 1);
 		
 		simulator.advanceCycles(
-			config.adc.conversionCycles
+			config.adcs[0].conversionCycles
 		);
 		
 		std::uint32_t status =
-			simulator.getBus().read(config.adcBase + 2);
+			simulator.getBus().read(config.adcs[0].baseAddress + 2);
 			
 		assert((status & (1u << 0)) == 0); // BUSY cleared
 		assert((status & (1u << 1)) != 0); // COMPLETE set
 		//read the conversion result through the bus
 		assert(
-			simulator.getBus().read(config.adcBase + 3) == 512
+			simulator.getBus().read(config.adcs[0].baseAddress + 3) == 512
 		);
 		//verify which channel produced the result
 		assert(
-			simulator.getBus().read(config.adcBase + 4) == 0
+			simulator.getBus().read(config.adcs[0].baseAddress + 4) == 0
 		);
 		
 		//second simulator level ADC
@@ -1491,30 +1528,30 @@ int main()
 		
 		//Enable ADC interrupts through the memory-mapped register
 		simulator2.getBus().write(
-			config2.adcBase + 5,
+			config2.adcs[0].baseAddress + 5,
 			1
 		);
 		
 		//select channel 0 and start
 		simulator2.getBus().write(
-			config2.adcBase + 0,
+			config2.adcs[0].baseAddress + 0,
 			0
 		);
 
 		simulator2.getBus().write(
-			config2.adcBase + 1,
+			config2.adcs[0].baseAddress + 1,
 			1
 		);
 		
 		//advance the conversion
 		simulator2.advanceCycles(
-			config2.adc.conversionCycles
+			config2.adcs[0].conversionCycles
 		);
 		
 		//verify the shared interrupt controller sees the ADC IRQ
 		assert(
 			simulator2.getInterruptController().getNextPending() ==
-			config2.adc.interruptNumber
+			config2.adcs[0].interruptNumber
 		);
 	}
 	
@@ -1525,7 +1562,7 @@ int main()
 		
 		simulator.getBus().write(
 			SimpleCPU::InterruptVectorBase +
-				config.adc.interruptNumber,
+				config.adcs[0].interruptNumber,
 			100
 		);
 		
@@ -1558,17 +1595,17 @@ int main()
 		simulator.setPinVoltage(0, 2.5);
 		
 		simulator.getBus().write(
-			config.adcBase + 5,
+			config.adcs[0].baseAddress + 5,
 			1
 		);
 		
 		simulator.getBus().write(
-			config.adcBase + 0,
+			config.adcs[0].baseAddress + 0,
 			0
 		);
 		
 		simulator.getBus().write(
-			config.adcBase + 1,
+			config.adcs[0].baseAddress + 1,
 			1
 		);
 		
@@ -1576,18 +1613,18 @@ int main()
 		assert(simulator.getCPU().isHalted());
 		
 		simulator.advanceCycles(
-			config.adc.conversionCycles - 1
+			config.adcs[0].conversionCycles - 1
 		);
 		
 		std::uint32_t status =
-			simulator.getBus().read(config.adcBase + 2);
+			simulator.getBus().read(config.adcs[0].baseAddress + 2);
 
 		assert((status & (1u << 0)) == 0); // BUSY clear
 		assert((status & (1u << 1)) != 0); // COMPLETE set
 		
 		assert(
 			simulator.getInterruptController().getNextPending() ==
-			config.adc.interruptNumber
+			config.adcs[0].interruptNumber
 		);
 		
 		simulator.tick();
@@ -1600,6 +1637,89 @@ int main()
 		assert(
 			simulator.getCPU().getProgramCounter() == 101
 		);
+	}
+	
+	//ADC instances work independently
+	{
+		BoardConfig config;
+
+		config.adcs = {
+			ADCConfig{},
+			ADCConfig{}
+		};
+
+		// ADC 0
+		config.adcs[0].baseAddress = 0x00003000;
+		config.adcs[0].interruptNumber = 2;
+
+		// ADC 1
+		config.adcs[1].baseAddress = 0x00003100;
+		config.adcs[1].interruptNumber = 3;
+
+		Simulator simulator(config);
+		Bus& bus = simulator.getBus();
+
+		// Give the two ADC channels different voltages.
+		simulator.setPinVoltage(0, 1.0);
+		simulator.setPinVoltage(1, 4.0);
+
+		// ADC 0 -> channel 0
+		bus.write(0x00003000 + 0, 0);
+		bus.write(0x00003000 + 1, 1);
+
+		// ADC 1 -> channel 1
+		bus.write(0x00003100 + 0, 1);
+		bus.write(0x00003100 + 1, 1);
+
+		simulator.advanceCycles(20);
+
+		std::uint32_t result0 =
+			bus.read(0x00003000 + 3);
+
+		std::uint32_t result1 =
+			bus.read(0x00003100 + 3);
+
+		assert(result0 != result1);
+		assert(result0 < result1);
+	}
+	
+	//configured count reaches interrupt controller
+	{
+		BoardConfig config;
+		config.interruptCount = 16;
+
+		Simulator simulator(config);
+
+		InterruptController& interrupts =
+			simulator.getInterruptController();
+
+		// Highest valid interrupt on a 16-interrupt controller.
+		interrupts.request(15);
+
+		assert(interrupts.isPending(15));
+	}
+	
+	//invalid peripheral IRQ is rejected during board construction
+	{
+		BoardConfig config;
+
+		config.interruptCount = 4;
+
+		// Valid IRQs are 0 through 3.
+		config.adcs[0].interruptNumber = 4;
+
+		bool exceptionThrown = false;
+
+		try
+		{
+			Simulator simulator(config);
+		}
+		catch (const std::invalid_argument&)
+		{
+			exceptionThrown = true;
+		}
+
+		assert(exceptionThrown);
 	}
 	
     std::cout << "Simulation tests passed.\n";

@@ -15,16 +15,14 @@ Simulator::Simulator(const BoardConfig& config)
 			config.logicVoltage, 
 			config.digitalHighThreshold
 		),
-	  interruptController(),
-	  adc(
-			config.adc,
-			gpio,
-			interruptController
-		),
-	  timer(interruptController, 0),
+	  interruptController(config.interruptCount),
 	  canController(interruptController, 1),
-	  cpu(bus, interruptController)
-{
+	  cpu(
+			bus,
+			interruptController,
+			config.registerCount
+		)
+{	
 	if (config.ramWords == 0)
 	{
 		throw std::invalid_argument(
@@ -44,12 +42,53 @@ Simulator::Simulator(const BoardConfig& config)
 		config.gpioBase,
 		config.gpioBase + 3
 	);
+	
+	if (config.interruptCount == 0)
+	{
+		throw std::invalid_argument(
+			"Board interrupt count must be greater than zero"
+		);
+	}
+	
+	for (const TimerConfig& timerConfig : config.timers)
+	{
+		if (timerConfig.interruptNumber >= config.interruptCount)
+		{
+			throw std::invalid_argument(
+				"Timer interrupt number is outside the configured interrupt range"
+			);
+		}
+	
+		timers.emplace_back(
+			interruptController,
+			timerConfig.interruptNumber
+		);
+	}
+	
+	for (const ADCConfig& adcConfig : config.adcs)
+	{
+		if (adcConfig.interruptNumber >= config.interruptCount)
+		{
+			throw std::invalid_argument(
+				"ADC interrupt number is outside the configured interrupt range"
+			);
+		}
+		
+		adcs.emplace_back(
+			adcConfig,
+			gpio,
+			interruptController
+		);
+	}
 
-	bus.attach(
-		timer,
-		config.timerBase,
-		config.timerBase + 4
-	);
+	for (std::size_t i = 0; i < timers.size(); ++i)
+	{
+		bus.attach(
+			timers[i],
+			config.timers[i].baseAddress,
+			config.timers[i].baseAddress + 4
+		);
+	}
 	
 	bus.attach(
 		canController,
@@ -57,15 +96,26 @@ Simulator::Simulator(const BoardConfig& config)
 		config.canBase + 24
 	);
 	
-	bus.attach(
-		adc,
-		config.adcBase,
-		config.adcBase + 5
-	);
+	for (std::size_t i = 0; i < adcs.size(); ++i)
+	{
+		bus.attach(
+			adcs[i],
+			config.adcs[i].baseAddress,
+			config.adcs[i].baseAddress + 5
+		);
+	}
 
     clockables.push_back(&cpu);
-	clockables.push_back(&adc);
-    clockables.push_back(&timer);
+	
+	for (ADC& adc : adcs)
+	{
+		clockables.push_back(&adc);
+	}
+	
+	for (Timer& timer : timers)
+	{
+		clockables.push_back(&timer);
+	}
 }
 
 Bus& Simulator::getBus()
@@ -105,7 +155,7 @@ void Simulator::addClockable(IClockable& device)
 
 Timer& Simulator::getTimer()
 {
-    return timer;
+    return timers.at(0);
 }
 
 SimpleCPU& Simulator::getCPU()
@@ -275,10 +325,10 @@ std::chrono::nanoseconds Simulator::getNextCycleDuration()
 
 ADC& Simulator::getADC()
 {
-    return adc;
+    return adcs.at(0);
 }
 
 const ADC& Simulator::getADC() const
 {
-    return adc;
+    return adcs.at(0);
 }

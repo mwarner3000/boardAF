@@ -210,7 +210,7 @@ int main()
 		cpu.reset();
 
 		for (std::size_t i = 0;
-			 i < SimpleCPU::RegisterCount;
+			 i < 8;
 			 ++i)
 		{
 			assert(cpu.getRegister(i) == 0);

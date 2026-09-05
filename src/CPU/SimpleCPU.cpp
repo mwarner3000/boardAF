@@ -2,26 +2,38 @@
 #include "CPU/SimpleCPU/SimpleISA.h"
 
 #include <stdexcept>
+#include <algorithm>
 
 SimpleCPU::SimpleCPU(
     Bus& bus,
-    InterruptController& interruptController
+    InterruptController& interruptController,
+    std::size_t registerCount
 )
     : bus(bus),
       interruptController(interruptController),
       programCounter(0),
-      registers{},
+      registers(registerCount, 0),
       halted(false),
       zeroFlag(false),
 	  interruptReturnAddress(0),
 	  servicingInterrupt(false)
 {
+	if (registerCount == 0 || registerCount > 16)
+	{
+		throw std::invalid_argument(
+			"CPU register count must be between 1 and 16"
+		);
+	}
 }
 
 void SimpleCPU::reset()
 {
     programCounter = 0;
-    registers.fill(0);
+    std::fill(
+		registers.begin(),
+		registers.end(),
+		0
+	);
     halted = false;
     zeroFlag = false;
 	interruptReturnAddress = 0;

@@ -72,9 +72,9 @@ private:
     RAM ram;
     GPIO gpio;
 	InterruptController interruptController;
-	ADC adc;
+	std::vector<ADC> adcs;
 
-	Timer timer;
+	std::vector<Timer> timers;
 	CANController canController;
 	SimpleCPU cpu;
 

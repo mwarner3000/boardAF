@@ -3,6 +3,7 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <vector>
 
 #include "CPU/ICPU.h"
 #include "Bus/Bus.h"
@@ -11,11 +12,12 @@
 class SimpleCPU : public ICPU
 {
 public:
-    static constexpr std::size_t RegisterCount = 8;
+    std::vector<std::uint32_t> registers;
 
     SimpleCPU(
 		Bus& bus,
-		InterruptController& interruptController
+		InterruptController& interruptController,
+		std::size_t registerCount = 8
 	);
 
     void reset() override;
@@ -35,8 +37,6 @@ private:
 	InterruptController& interruptController;
 
     std::uint32_t programCounter;
-
-    std::array<std::uint32_t, RegisterCount> registers;
 
     bool halted;
 	bool zeroFlag;
