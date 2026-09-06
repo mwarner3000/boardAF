@@ -4,6 +4,7 @@
 #include <vector>
 #include <chrono>
 #include <cstddef>
+#include <optional>
 
 #include "Board/BoardConfig.h"
 #include "Bus/Bus.h"
@@ -39,7 +40,6 @@ public:
     SimpleCPU& getCPU();
     Clock& getClock();
 	InterruptController& getInterruptController();
-	CANController& getCANController();
 
     const BoardConfig& getConfig() const;
 
@@ -61,7 +61,7 @@ public:
 	bool isRealTimeRunning() const;
 	
 	void setPinVoltage(std::size_t pin, double voltage);
-	double getPinVoltage(std::size_t pin) const;	
+	std::optional<double> getPinVoltage(std::size_t pinIndex) const;
 	std::chrono::nanoseconds getTimeCredit() const;
 	std::chrono::nanoseconds getNextCycleDuration();
 	
@@ -80,7 +80,6 @@ private:
 	std::vector<ADC> adcs;
 
 	std::vector<Timer> timers;
-	CANController canController;
 	SimpleCPU cpu;
 
     Clock clock;

@@ -21,6 +21,7 @@ public:
 	void write(std::uint32_t address, 
 			   std::uint32_t value) override;
     void tick(std::uint64_t cycle) override;
+	static constexpr std::uint32_t RegisterCount = 6;
 	
 private:
 	ADCConfig config;
@@ -44,4 +45,5 @@ private:
 	double sampleSelectedChannel();
 	
 	std::uint16_t convertSampleToCode() const;
+	
 };

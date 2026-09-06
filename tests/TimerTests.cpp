@@ -74,7 +74,6 @@ int main()
         timer.tick(1);
         timer.tick(2);
         timer.tick(3);
-        timer.tick(4);
 
         assert(timer.read(0) == 0);
         assert(timer.read(3) == 1);
@@ -89,7 +88,6 @@ int main()
         timer.write(2, 1);
 
         timer.tick(1);
-        timer.tick(2);
 
         assert(timer.read(3) == 1);
 
@@ -107,7 +105,6 @@ int main()
         timer.write(2, 1);
 
         timer.tick(1);
-        timer.tick(2);
 
         assert(timer.read(3) == 1);
 

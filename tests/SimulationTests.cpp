@@ -882,68 +882,6 @@ int main()
 		);
 	}
 	
-	// Two simulated controllers should communicate
-	// over the shared CAN bus through memory-mapped
-	// CAN registers.
-	{
-		Simulation simulation;
-
-		Simulator& nodeA =
-			simulation.createNode();
-
-		Simulator& nodeB =
-			simulation.createNode();
-
-		const std::uint32_t canA =
-			nodeA.getConfig().canBase;
-
-		const std::uint32_t canB =
-			nodeB.getConfig().canBase;
-
-		Bus& busA = nodeA.getBus();
-		Bus& busB = nodeB.getBus();
-
-		// Node A TX frame:
-		// ID = 0x123
-		// length = 2
-		// data = AA 55
-
-		busA.write(canA + 2, 0x123);
-		busA.write(canA + 3, 2);
-
-		busA.write(canA + 4, 0xAA);
-		busA.write(canA + 5, 0x55);
-
-		// CONTROL bit 0 = transmit.
-		busA.write(canA + 0, 1);
-
-		// Node B should now have an RX frame.
-		assert(
-			busB.read(canB + 1) == 1
-		);
-
-		assert(
-			busB.read(canB + 12) == 0x123
-		);
-
-		assert(
-			busB.read(canB + 13) == 2
-		);
-
-		assert(
-			busB.read(canB + 14) == 0xAA
-		);
-
-		assert(
-			busB.read(canB + 15) == 0x55
-		);
-
-		// Sender should not receive its own frame.
-		assert(
-			busA.read(canA + 1) == 0
-		);
-	}
-	
 	#if 0
 	
 	// End-to-end CAN firmware interrupt test:
@@ -1829,6 +1767,109 @@ int main()
 
 		assert(&adc0 != &adc1);
 		assert(&adc0 == &simulator.getADC(0));
+	}
+	
+	{
+		BoardConfig config;
+
+		config.ramBase = 0xFFFFFF00;
+		config.ramWords = 256;
+
+		Simulator simulator(config);
+	}
+	
+	{
+		BoardConfig config;
+
+		config.ramBase = 0xFFFFFF00;
+		config.ramWords = 257;
+
+		bool threw = false;
+
+		try
+		{
+			Simulator simulator(config);
+		}
+		catch (const std::invalid_argument&)
+		{
+			threw = true;
+		}
+
+		assert(threw);
+	}
+	
+	{
+		BoardConfig config;
+		config.clockHz = 0;
+
+		bool threw = false;
+
+		try
+		{
+			Simulator simulator(config);
+		}
+		catch (const std::invalid_argument&)
+		{
+			threw = true;
+		}
+
+		assert(threw);
+	}
+	
+	{
+		Simulator simulator;
+
+		bool threw = false;
+
+		try
+		{
+			simulator.advanceTime(
+				std::chrono::nanoseconds(-100)
+			);
+		}
+		catch (const std::invalid_argument&)
+		{
+			threw = true;
+		}
+
+		assert(threw);
+	}
+	
+	{
+		Simulator simulator;
+
+		const std::uint64_t before =
+			simulator.getClock().getCycle();
+
+		simulator.advanceTime(
+			std::chrono::nanoseconds(0)
+		);
+
+		assert(
+			simulator.getClock().getCycle() == before
+		);
+	}
+	
+	{
+		BoardConfig config;
+		config.clockHz = UINT64_MAX;
+
+		Simulator simulator(config);
+
+		bool threw = false;
+
+		try
+		{
+			simulator.advanceTime(
+				std::chrono::seconds(2)
+			);
+		}
+		catch (const std::overflow_error&)
+		{
+			threw = true;
+		}
+
+		assert(threw);
 	}
 	
     std::cout << "Simulation tests passed.\n";

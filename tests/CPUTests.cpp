@@ -266,10 +266,10 @@ int main()
 
         RunResult result = simulator.run(100);
 
-        assert(result == RunResult::Halted);
+        assert(result == RunResult::CycleLimitReached);
         assert(cpu.getRegister(0) == 25);
         assert(bus.read(11) == 25);
-        assert(simulator.getClock().getCycle() == 5);
+        assert(simulator.getClock().getCycle() == 100);
     }
 
     // Firmware-driven GPIO.
@@ -348,7 +348,7 @@ int main()
 		RunResult result =
 			simulator.run(100);
 
-		assert(result == RunResult::Halted);
+		assert(result == RunResult::CycleLimitReached);
 
 		assert(bus.read(0x1000) == 7);
 		assert(bus.read(0x1001) == 1);
@@ -411,13 +411,13 @@ int main()
 		RunResult result =
 			simulator.run(100);
 
-		assert(result == RunResult::Halted);
+		assert(result == RunResult::CycleLimitReached);
 
 		assert(cpu.getRegister(1) == 30);
 		assert(cpu.getRegister(2) == 20);
 		assert(cpu.getRegister(3) == 30);
 
-		assert(simulator.getClock().getCycle() == 5);
+		assert(simulator.getClock().getCycle() == 100);
 	}
 	
 	//register aware memory operations
@@ -444,7 +444,7 @@ int main()
 		RunResult result =
 			simulator.run(100);
 
-		assert(result == RunResult::Halted);
+		assert(result == RunResult::CycleLimitReached);
 
 		assert(bus.read(100) == 123);
 		assert(cpu.getRegister(4) == 123);
@@ -504,7 +504,7 @@ int main()
 		RunResult result =
 			simulator.run(100);
 
-		assert(result == RunResult::Halted);
+		assert(result == RunResult::CycleLimitReached);
 		assert(cpu.getZeroFlag());
 	}
 	
@@ -561,7 +561,7 @@ int main()
 		RunResult result =
 			simulator.run(100);
 
-		assert(result == RunResult::Halted);
+		assert(result == RunResult::CycleLimitReached);
 		assert(cpu.getRegister(3) == 222);
 	}
 	
@@ -622,7 +622,7 @@ int main()
 		RunResult result =
 			simulator.run(100);
 
-		assert(result == RunResult::Halted);
+		assert(result == RunResult::CycleLimitReached);
 		assert(cpu.getRegister(1) == 15);
 	}
 
@@ -697,7 +697,7 @@ int main()
 		RunResult result =
 			simulator.run(100);
 
-		assert(result == RunResult::Halted);
+		assert(result == RunResult::CycleLimitReached);
 		assert(cpu.getRegister(1) == 0);
 		assert(cpu.getZeroFlag());
 	}

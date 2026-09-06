@@ -21,6 +21,8 @@ public:
                std::uint32_t value) override;
 
     void tick(std::uint64_t cycle) override;
+	
+	static constexpr std::uint32_t RegisterCount = 5;
 
 private:
     std::uint16_t counter;

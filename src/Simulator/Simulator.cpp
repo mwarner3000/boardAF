@@ -1,6 +1,33 @@
+#include <cstdint>
 #include <stdexcept>
 
 #include "Simulator/Simulator.h"
+
+namespace
+{
+    std::uint32_t validateRAMSize(const BoardConfig& config)
+    {
+        if (config.ramWords == 0)
+        {
+            throw std::invalid_argument(
+                "Board RAM size must be greater than zero"
+            );
+        }
+
+        const std::uint64_t lastAddress =
+            static_cast<std::uint64_t>(config.ramBase) +
+            static_cast<std::uint64_t>(config.ramWords) - 1;
+
+        if (lastAddress > UINT32_MAX)
+        {
+            throw std::invalid_argument(
+                "Board RAM exceeds the 32-bit address space"
+            );
+        }
+
+        return static_cast<std::uint32_t>(config.ramWords);
+    }
+}
 
 Simulator::Simulator()
     : Simulator(BoardConfig{})
@@ -9,27 +36,19 @@ Simulator::Simulator()
 
 Simulator::Simulator(const BoardConfig& config)
     : config(config),
-      ram(config.ramWords),
+      ram(validateRAMSize(config)),
       gpio(
 			config.gpioPins,
 			config.logicVoltage, 
 			config.digitalHighThreshold
 		),
 	  interruptController(config.interruptCount),
-	  canController(interruptController, 1),
 	  cpu(
 			bus,
 			interruptController,
 			config.registerCount
 		)
-{	
-	if (config.ramWords == 0)
-	{
-		throw std::invalid_argument(
-			"Board RAM size must be greater than zero"
-		);
-	}
-
+{
     bus.attach(
 		ram,
 		config.ramBase,
@@ -40,13 +59,21 @@ Simulator::Simulator(const BoardConfig& config)
 	bus.attach(
 		gpio,
 		config.gpioBase,
-		config.gpioBase + 3
+		config.gpioBase +
+			GPIO::RegisterCount - 1
 	);
 	
 	if (config.interruptCount == 0)
 	{
 		throw std::invalid_argument(
 			"Board interrupt count must be greater than zero"
+		);
+	}
+	
+	if (config.clockHz == 0)
+	{
+		throw std::invalid_argument(
+			"Board clock frequency must be greater than zero"
 		);
 	}
 	
@@ -86,22 +113,18 @@ Simulator::Simulator(const BoardConfig& config)
 		bus.attach(
 			timers[i],
 			config.timers[i].baseAddress,
-			config.timers[i].baseAddress + 4
+			config.timers[i].baseAddress +
+				Timer::RegisterCount - 1
 		);
 	}
-	
-	bus.attach(
-		canController,
-		config.canBase,
-		config.canBase + 24
-	);
 	
 	for (std::size_t i = 0; i < adcs.size(); ++i)
 	{
 		bus.attach(
 			adcs[i],
 			config.adcs[i].baseAddress,
-			config.adcs[i].baseAddress + 5
+			config.adcs[i].baseAddress +
+				ADC::RegisterCount - 1
 		);
 	}
 
@@ -178,26 +201,16 @@ SimpleCPU& Simulator::getCPU()
     return cpu;
 }
 
-CANController& Simulator::getCANController()
-{
-    return canController;
-}
-
 RunResult Simulator::run(std::uint64_t maxCycles)
 {
-    std::uint64_t startCycle = clock.getCycle();
+    const std::uint64_t startCycle = clock.getCycle();
 
-    while (!cpu.isHalted())
+    while (clock.getCycle() - startCycle < maxCycles)
     {
-        if (clock.getCycle() - startCycle >= maxCycles)
-        {
-            return RunResult::CycleLimitReached;
-        }
-
         tick();
     }
 
-    return RunResult::Halted;
+    return RunResult::CycleLimitReached;
 }
 
 const BoardConfig& Simulator::getConfig() const
@@ -217,6 +230,13 @@ void Simulator::advanceTime(
     std::chrono::nanoseconds duration
 )
 {
+    if (duration.count() < 0)
+    {
+        throw std::invalid_argument(
+            "Simulation time duration cannot be negative"
+        );
+    }
+
     if (config.clockHz == 0)
     {
         throw std::invalid_argument(
@@ -232,15 +252,60 @@ void Simulator::advanceTime(
             duration.count()
         );
 
-    const std::uint64_t scaledTime =
-        nanoseconds * config.clockHz +
+    const std::uint64_t wholeSeconds =
+        nanoseconds / NanosecondsPerSecond;
+
+    const std::uint64_t remainingNanoseconds =
+        nanoseconds % NanosecondsPerSecond;
+
+    if (
+        wholeSeconds != 0 &&
+        config.clockHz >
+            UINT64_MAX / wholeSeconds
+    )
+    {
+        throw std::overflow_error(
+            "Simulation time advancement exceeds cycle range"
+        );
+    }
+
+    const std::uint64_t wholeSecondCycles =
+        wholeSeconds * config.clockHz;
+
+    if (
+        remainingNanoseconds != 0 &&
+        config.clockHz >
+            (UINT64_MAX - timeRemainder) /
+            remainingNanoseconds
+    )
+    {
+        throw std::overflow_error(
+            "Simulation time advancement exceeds cycle range"
+        );
+    }
+
+    const std::uint64_t scaledFraction =
+        remainingNanoseconds * config.clockHz +
         timeRemainder;
 
-    const std::uint64_t cycles =
-        scaledTime / NanosecondsPerSecond;
+    const std::uint64_t fractionalCycles =
+        scaledFraction / NanosecondsPerSecond;
 
     timeRemainder =
-        scaledTime % NanosecondsPerSecond;
+        scaledFraction % NanosecondsPerSecond;
+
+    if (
+        fractionalCycles >
+        UINT64_MAX - wholeSecondCycles
+    )
+    {
+        throw std::overflow_error(
+            "Simulation time advancement exceeds cycle range"
+        );
+    }
+
+    const std::uint64_t cycles =
+        wholeSecondCycles + fractionalCycles;
 
     advanceCycles(cycles);
 }
@@ -293,22 +358,11 @@ void Simulator::setPinVoltage(
     gpio.getPin(pin).setExternalVoltage(voltage);
 }
 
-double Simulator::getPinVoltage(
-    std::size_t pin
-) const
+std::optional<double> Simulator::getPinVoltage(std::size_t pinIndex) const
 {
-	auto voltage =
-		gpio.getPin(pin).getEffectiveVoltage(
-			config.logicVoltage
-		);
-
-	if (!voltage.has_value())
-	{
-		// TODO: define public API behavior for floating pins.
-		return 0.0;
-	}
-
-	return voltage.value();
+    return gpio.getPin(pinIndex).getEffectiveVoltage(
+        gpio.getLogicVoltage()
+    );
 }
 
 InterruptController&

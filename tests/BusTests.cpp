@@ -137,6 +137,29 @@ int main()
 
         assert(exceptionThrown);
     }
+	
+	//prove overflow protection
+	{
+		Bus bus;
+		RAM ram(5);
+
+		bool threw = false;
+
+		try
+		{
+			bus.attach(
+				ram,
+				0xFFFFFFFE,
+				0x00000002
+			);
+		}
+		catch (const std::invalid_argument&)
+		{
+			threw = true;
+		}
+
+		assert(threw);
+	}
 
     std::cout << "Bus tests passed.\n";
 

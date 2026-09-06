@@ -23,7 +23,6 @@ struct BoardConfig
     // Memory map
     std::uint32_t ramBase   = 0x00000000;
     std::uint32_t gpioBase  = 0x00001000;
-	std::uint32_t canBase = 0x00005000;
 	std::vector<TimerConfig> timers{
 		TimerConfig{
 			0x00002000,

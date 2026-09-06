@@ -91,25 +91,16 @@ void Timer::write(std::uint32_t address,
 void Timer::tick(std::uint64_t /*cycle*/)
 {
     if (!enabled)
-    {
         return;
-    }
+
+    ++counter;
 
     if (counter >= period)
-	{
-		counter = 0;
-		expired = true;
-
-		if (interruptEnabled)
-		{
-			interruptController.request(
-				interruptNumber
-			);
-		}
-	}
-	
-    else
     {
-        ++counter;
+        counter = 0;
+        expired = true;
+
+        if (interruptEnabled)
+            interruptController.request(interruptNumber);
     }
 }

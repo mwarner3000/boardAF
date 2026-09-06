@@ -29,6 +29,7 @@ public:
     std::size_t getPinCount() const;
 	
 	double getLogicVoltage() const;
+	static constexpr std::uint32_t RegisterCount = 4;
 
 private:
     std::size_t selectedPin;

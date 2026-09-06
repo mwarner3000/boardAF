@@ -15,10 +15,6 @@ Simulator& Simulation::createNode()
 
     Simulator& node = *nodes.back();
 
-    canBus.attach(
-        node.getCANController()
-    );
-
     return node;
 }
 
@@ -31,10 +27,6 @@ Simulator& Simulation::createNode(
     );
 
     Simulator& node = *nodes.back();
-
-    canBus.attach(
-        node.getCANController()
-    );
 
     return node;
 }
