@@ -1722,6 +1722,115 @@ int main()
 		assert(exceptionThrown);
 	}
 	
+	//prove register count is configurable
+	{
+    BoardConfig config;
+    config.registerCount = 16;
+
+    Simulator simulator(config);
+
+    // MOVI R15, 123
+    simulator.getBus().write(
+			0,
+			SimpleISA::encode(
+				SimpleISA::Opcode::MOVI,
+				15,
+				0,
+				123
+			)
+		);
+
+		simulator.tick();
+
+		assert(simulator.getCPU().getRegister(15) == 123);
+	}
+	
+	//test for zero registers
+	{
+		BoardConfig config;
+		config.registerCount = 0;
+
+		bool exceptionThrown = false;
+
+		try
+		{
+			Simulator simulator(config);
+		}
+		catch (const std::invalid_argument&)
+		{
+			exceptionThrown = true;
+		}
+
+		assert(exceptionThrown);
+	}
+	
+	//test for too many registers
+	{
+		BoardConfig config;
+		config.registerCount = 0;
+
+		bool exceptionThrown = false;
+
+		try
+		{
+			Simulator simulator(config);
+		}
+		catch (const std::invalid_argument&)
+		{
+			exceptionThrown = true;
+		}
+
+		assert(exceptionThrown);
+	}
+	
+	//multiple timers
+	{
+		BoardConfig config;
+
+		config.timers = {
+			TimerConfig{},
+			TimerConfig{}
+		};
+
+		config.timers[0].baseAddress = 0x00002000;
+		config.timers[0].interruptNumber = 0;
+
+		config.timers[1].baseAddress = 0x00002100;
+		config.timers[1].interruptNumber = 1;
+
+		Simulator simulator(config);
+
+		Timer& timer0 = simulator.getTimer();
+		Timer& timer1 = simulator.getTimer(1);
+
+		assert(&timer0 != &timer1);
+		assert(&timer0 == &simulator.getTimer(0));
+	}
+	
+	//multiple ADCs
+	{
+		BoardConfig config;
+
+		config.adcs = {
+			ADCConfig{},
+			ADCConfig{}
+		};
+
+		config.adcs[0].baseAddress = 0x00003000;
+		config.adcs[0].interruptNumber = 2;
+
+		config.adcs[1].baseAddress = 0x00003100;
+		config.adcs[1].interruptNumber = 3;
+
+		Simulator simulator(config);
+
+		ADC& adc0 = simulator.getADC();
+		ADC& adc1 = simulator.getADC(1);
+
+		assert(&adc0 != &adc1);
+		assert(&adc0 == &simulator.getADC(0));
+	}
+	
     std::cout << "Simulation tests passed.\n";
 
     return 0;

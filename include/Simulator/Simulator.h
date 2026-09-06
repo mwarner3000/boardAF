@@ -33,6 +33,9 @@ public:
     RAM& getRAM();
     GPIO& getGPIO();
     Timer& getTimer();
+	const Timer& getTimer() const;
+	Timer& getTimer(std::size_t index);
+	const Timer& getTimer(std::size_t index) const;
     SimpleCPU& getCPU();
     Clock& getClock();
 	InterruptController& getInterruptController();
@@ -64,6 +67,8 @@ public:
 	
 	ADC& getADC();
 	const ADC& getADC() const;
+	ADC& getADC(std::size_t index);
+	const ADC& getADC(std::size_t index) const;
 
 private:
     BoardConfig config;

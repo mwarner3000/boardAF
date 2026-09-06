@@ -155,7 +155,22 @@ void Simulator::addClockable(IClockable& device)
 
 Timer& Simulator::getTimer()
 {
-    return timers.at(0);
+    return getTimer(0);
+}
+
+Timer& Simulator::getTimer(std::size_t index)
+{
+    return timers.at(index);
+}
+
+const Timer& Simulator::getTimer() const
+{
+    return getTimer(0);
+}
+
+const Timer& Simulator::getTimer(std::size_t index) const
+{
+    return timers.at(index);
 }
 
 SimpleCPU& Simulator::getCPU()
@@ -325,10 +340,20 @@ std::chrono::nanoseconds Simulator::getNextCycleDuration()
 
 ADC& Simulator::getADC()
 {
-    return adcs.at(0);
+    return getADC(0);
+}
+
+ADC& Simulator::getADC(std::size_t index)
+{
+    return adcs.at(index);
 }
 
 const ADC& Simulator::getADC() const
 {
-    return adcs.at(0);
+    return getADC(0);
+}
+
+const ADC& Simulator::getADC(std::size_t index) const
+{
+    return adcs.at(index);
 }
