@@ -1,14 +1,16 @@
-# MicroSim
+# boardAF
 
-MicroSim is a modular microcontroller simulation framework written in C++.
+**Board Abstraction Framework**
 
-The goal of MicroSim is to provide configurable simulated microcontrollers that behave as self-contained embedded controllers. A simulated controller can execute firmware, interact with peripherals, receive external input signals, produce output signals, and respond to hardware interrupts without needing to know anything about the environment in which it is being used.
+boardAF is a modular microcontroller simulation framework written in C++.
 
-MicroSim is intended for experimentation, prototyping, robotics simulation, embedded-system development, and testing generic microcontroller configurations.
+The goal of boardAF is to provide configurable simulated microcontrollers that behave as self-contained embedded controllers. A simulated controller can execute firmware, interact with peripherals, receive external input signals, produce output signals, and respond to hardware interrupts without needing to know anything about the environment in which it is being used.
+
+boardAF is intended for experimentation, prototyping, robotics simulation, embedded-system development, and testing generic microcontroller configurations.
 
 ## Project Goals
 
-MicroSim is designed around several core goals:
+boardAF is designed around several core goals:
 
 - Simulate configurable microcontroller hardware.
 - Keep simulated hardware separate from assembly syntax, parsers, compilers, and other software toolchains.
@@ -22,11 +24,11 @@ MicroSim is designed around several core goals:
 - Keep peripherals modular so additional devices can be added without redesigning the core simulator.
 - Keep interrupt sources independent from CPU implementation details by routing IRQs through an interrupt controller.
 
-MicroSim is not intended to be an exact transistor-level, circuit-level, or brand-specific reproduction of a commercial microcontroller. Instead, it aims to model embedded-controller behavior and resource constraints at a useful level of abstraction.
+boardAF is not intended to be an exact transistor-level, circuit-level, or brand-specific reproduction of a commercial microcontroller. Instead, it aims to model embedded-controller behavior and resource constraints at a useful level of abstraction.
 
 ## Current Status
 
-MicroSim is under active development. Implemented components currently include:
+boardAF is under active development. Implemented components currently include:
 
 - System bus
 - Configurable RAM size and base address
@@ -55,21 +57,21 @@ The project should currently be considered experimental and its APIs may change 
 
 ## Hardware / Software Separation
 
-MicroSim separates simulated hardware from the software used to program it.
+boardAF separates simulated hardware from the software used to program it.
 
-The CPU executes machine instructions defined by its instruction set. Assembly-language syntax is not part of the simulated hardware. This allows future assemblers, compilers, parsers, or other development tools to target a MicroSim CPU without requiring changes to the CPU, peripherals, or other simulated hardware.
+The CPU executes machine instructions defined by its instruction set. Assembly-language syntax is not part of the simulated hardware. This allows future assemblers, compilers, parsers, or other development tools to target a boardAF CPU without requiring changes to the CPU, peripherals, or other simulated hardware.
 
 The current SimpleISA instruction set exists to develop and test the simulator and does not prevent other instruction sets or software toolchains from being added in the future.
 
 ## Time and Execution
 
-One MicroSim clock cycle represents one hardware clock cycle of the configured simulated controller.
+One boardAF clock cycle represents one hardware clock cycle of the configured simulated controller.
 
 `BoardConfig::clockHz` determines the relationship between elapsed time and MCU cycles. For example, advancing a 16 MHz controller by 1 ms executes 16,000 hardware cycles, while a 32 MHz controller executes 32,000 cycles during the same interval.
 
 Advancing cycles does not skip hardware activity. The CPU and other clock-driven devices are advanced during those cycles.
 
-MicroSim currently supports three execution styles:
+boardAF currently supports three execution styles:
 
 - `advanceCycles(n)` explicitly executes a known number of MCU cycles.
 - `advanceTime(duration)` converts an elapsed duration into MCU cycles using the configured clock frequency.
@@ -83,9 +85,9 @@ Firmware does not directly read the host clock. It experiences time through simu
 
 ## External Simulation Boundary
 
-A MicroSim controller does not model the physical world around it.
+A boardAF controller does not model the physical world around it.
 
-For example, MicroSim does not need to know whether an input voltage represents wheel speed, temperature, pressure, a switch, a sensor, or some other world quantity. The external environment supplies pin voltages, firmware determines how those values are used, and the external environment decides what controller outputs affect.
+For example, boardAF does not need to know whether an input voltage represents wheel speed, temperature, pressure, a switch, a sensor, or some other world quantity. The external environment supplies pin voltages, firmware determines how those values are used, and the external environment decides what controller outputs affect.
 
 The current world-facing pin interface is deliberately small:
 
@@ -111,7 +113,7 @@ bot.stopRealTime();
 
 An external simulator with its own time-management system can instead call `advanceTime()`, while deterministic tests can call `advanceCycles()`.
 
-The external environment does not need to know MicroSim's GPIO register map, CPU registers, instruction encoding, or internal peripheral organization merely to exchange physical pin signals with the controller.
+The external environment does not need to know boardAF's GPIO register map, CPU registers, instruction encoding, or internal peripheral organization merely to exchange physical pin signals with the controller.
 
 An end-to-end switched-light integration test verifies this boundary: the external side changes a switch pin voltage and observes a light pin voltage, while firmware inside the simulated controller performs the GPIO reads, decision making, and GPIO writes.
 
@@ -130,7 +132,7 @@ The generic GPIO peripheral currently uses a pin-selected register interface:
 
 This allows a generic board to expose 8, 100, or more pins without dividing the user-visible GPIO model into artificial 32-pin banks. CPU word width remains an implementation property and does not define the total number of simulated pins.
 
-Pins carry simulated voltage values. Digital HIGH/LOW interpretation uses the board's configured logic voltage and digital HIGH threshold. Detailed circuit behavior and the physical meaning of those voltages remain outside MicroSim's core scope.
+Pins carry simulated voltage values. Digital HIGH/LOW interpretation uses the board's configured logic voltage and digital HIGH threshold. Detailed circuit behavior and the physical meaning of those voltages remain outside boardAF's core scope.
 
 ## Timer and Interrupts
 
@@ -169,11 +171,11 @@ The current SimpleCPU interrupt implementation is intentionally basic. Interrupt
 - GPIO base address
 - timer base address
 
-The long-term goal is to let users create generic board configurations approximating the resources and performance characteristics needed for a real embedded project without requiring MicroSim to reproduce a particular commercial MCU exactly.
+The long-term goal is to let users create generic board configurations approximating the resources and performance characteristics needed for a real embedded project without requiring boardAF to reproduce a particular commercial MCU exactly.
 
 ## Building
 
-MicroSim uses CMake and requires a C++20-compatible compiler.
+boardAF uses CMake and requires a C++20-compatible compiler.
 
 From the repository root:
 
@@ -197,7 +199,7 @@ The current test targets cover RAM, Bus, GPIO, Timer, CPU, Simulation behavior, 
 ## Project Structure
 
 ```text
-MicroSim/
+boardAF/
 ├── docs/       Project design and architecture documentation
 ├── include/    Public headers
 ├── src/        Implementation source
@@ -226,6 +228,6 @@ These items describe project direction and should not be assumed to be implement
 
 ## Scope
 
-MicroSim focuses on the simulated embedded controller.
+boardAF focuses on the simulated embedded controller.
 
-Detailed physical-world simulation, vehicle dynamics, robotics physics, circuit simulation, sensor physics, and similar environment-specific behavior are outside the core scope of the project. Those systems can instead interact with MicroSim through its external interfaces.
+Detailed physical-world simulation, vehicle dynamics, robotics physics, circuit simulation, sensor physics, and similar environment-specific behavior are outside the core scope of the project. Those systems can instead interact with boardAF through its external interfaces.
