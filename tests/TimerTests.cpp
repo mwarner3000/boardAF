@@ -211,6 +211,21 @@ int main()
 			interruptController.isPending(2)
 		);
 	}
+	
+	{
+		InterruptController interruptController(8);
+		Timer timer(interruptController, 0);
+
+		timer.write(1, 0); // PERIOD
+		timer.write(2, 1); // ENABLE
+
+		timer.tick(1);
+		timer.tick(2);
+		timer.tick(3);
+
+		assert(timer.read(0) == 0); // COUNTER
+		assert(timer.read(3) == 0); // EXPIRED
+	}
 
     std::cout << "Timer tests passed.\n";
 

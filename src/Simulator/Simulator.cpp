@@ -70,10 +70,19 @@ Simulator::Simulator(const BoardConfig& config)
 		);
 	}
 	
+	constexpr std::uint64_t MaxClockHz = 1'000'000'000ULL;
+	
 	if (config.clockHz == 0)
 	{
 		throw std::invalid_argument(
 			"Board clock frequency must be greater than zero"
+		);
+	}
+	
+	if (config.clockHz > MaxClockHz)
+	{
+		throw std::invalid_argument(
+			"Board clock frequency cannot exceed 1 GHz"
 		);
 	}
 	
@@ -201,7 +210,7 @@ SimpleCPU& Simulator::getCPU()
     return cpu;
 }
 
-RunResult Simulator::run(std::uint64_t maxCycles)
+void Simulator::run(std::uint64_t maxCycles)
 {
     const std::uint64_t startCycle = clock.getCycle();
 
@@ -209,8 +218,6 @@ RunResult Simulator::run(std::uint64_t maxCycles)
     {
         tick();
     }
-
-    return RunResult::CycleLimitReached;
 }
 
 const BoardConfig& Simulator::getConfig() const
@@ -237,13 +244,6 @@ void Simulator::advanceTime(
         );
     }
 
-    if (config.clockHz == 0)
-    {
-        throw std::invalid_argument(
-            "Board clock frequency must be greater than zero"
-        );
-    }
-
     constexpr std::uint64_t NanosecondsPerSecond =
         1'000'000'000ULL;
 
@@ -258,31 +258,8 @@ void Simulator::advanceTime(
     const std::uint64_t remainingNanoseconds =
         nanoseconds % NanosecondsPerSecond;
 
-    if (
-        wholeSeconds != 0 &&
-        config.clockHz >
-            UINT64_MAX / wholeSeconds
-    )
-    {
-        throw std::overflow_error(
-            "Simulation time advancement exceeds cycle range"
-        );
-    }
-
     const std::uint64_t wholeSecondCycles =
         wholeSeconds * config.clockHz;
-
-    if (
-        remainingNanoseconds != 0 &&
-        config.clockHz >
-            (UINT64_MAX - timeRemainder) /
-            remainingNanoseconds
-    )
-    {
-        throw std::overflow_error(
-            "Simulation time advancement exceeds cycle range"
-        );
-    }
 
     const std::uint64_t scaledFraction =
         remainingNanoseconds * config.clockHz +
@@ -293,16 +270,6 @@ void Simulator::advanceTime(
 
     timeRemainder =
         scaledFraction % NanosecondsPerSecond;
-
-    if (
-        fractionalCycles >
-        UINT64_MAX - wholeSecondCycles
-    )
-    {
-        throw std::overflow_error(
-            "Simulation time advancement exceeds cycle range"
-        );
-    }
 
     const std::uint64_t cycles =
         wholeSecondCycles + fractionalCycles;
@@ -371,20 +338,8 @@ Simulator::getInterruptController()
     return interruptController;
 }
 
-std::chrono::nanoseconds Simulator::getTimeCredit() const
-{
-	return timeCredit;
-}
-
 std::chrono::nanoseconds Simulator::getNextCycleDuration()
 {
-	if (config.clockHz == 0)
-	{
-		throw std::runtime_error(
-			"Clock frequency cannot be zero"
-		);
-	}
-
 	std::int64_t numerator = 1000000000 + clockTimeRemainder;
 	std::int64_t wholeNanoseconds = numerator / config.clockHz;
 	clockTimeRemainder = numerator % config.clockHz;

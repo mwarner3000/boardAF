@@ -18,12 +18,6 @@
 #include "Communication/CANController.h"
 #include "Devices/ADC.h"
 
-enum class RunResult
-{
-    Halted,
-    CycleLimitReached
-};
-
 class Simulator
 {
 public:
@@ -44,7 +38,7 @@ public:
     const BoardConfig& getConfig() const;
 
     void tick();
-    RunResult run(std::uint64_t maxCycles);
+    void run(std::uint64_t maxCycles);
 
     void addClockable(IClockable& device);
 	
@@ -62,7 +56,6 @@ public:
 	
 	void setPinVoltage(std::size_t pin, double voltage);
 	std::optional<double> getPinVoltage(std::size_t pinIndex) const;
-	std::chrono::nanoseconds getTimeCredit() const;
 	std::chrono::nanoseconds getNextCycleDuration();
 	
 	ADC& getADC();
@@ -91,6 +84,5 @@ private:
 
     std::chrono::steady_clock::time_point
         lastRealTimeUpdate;
-	std::chrono::nanoseconds timeCredit{0};
 	std::uint64_t clockTimeRemainder{0};
 };

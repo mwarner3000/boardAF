@@ -93,6 +93,9 @@ void Timer::tick(std::uint64_t /*cycle*/)
     if (!enabled)
         return;
 
+    if (period == 0)
+        return;
+
     ++counter;
 
     if (counter >= period)

@@ -264,9 +264,7 @@ int main()
 
         cpu.reset();
 
-        RunResult result = simulator.run(100);
-
-        assert(result == RunResult::CycleLimitReached);
+        simulator.run(100);
         assert(cpu.getRegister(0) == 25);
         assert(bus.read(11) == 25);
         assert(simulator.getClock().getCycle() == 100);
@@ -345,10 +343,7 @@ int main()
 
 		cpu.reset();
 
-		RunResult result =
-			simulator.run(100);
-
-		assert(result == RunResult::CycleLimitReached);
+		simulator.run(100);
 
 		assert(bus.read(0x1000) == 7);
 		assert(bus.read(0x1001) == 1);
@@ -377,9 +372,7 @@ int main()
         // an endless stream of NOP instructions.
         cpu.reset();
 
-        RunResult result = simulator.run(10);
-
-        assert(result == RunResult::CycleLimitReached);
+        simulator.run(10);
         assert(simulator.getClock().getCycle() == 10);
         assert(!cpu.isHalted());
     }
@@ -408,10 +401,7 @@ int main()
 
 		cpu.reset();
 
-		RunResult result =
-			simulator.run(100);
-
-		assert(result == RunResult::CycleLimitReached);
+		simulator.run(100);
 
 		assert(cpu.getRegister(1) == 30);
 		assert(cpu.getRegister(2) == 20);
@@ -441,10 +431,7 @@ int main()
 
 		cpu.reset();
 
-		RunResult result =
-			simulator.run(100);
-
-		assert(result == RunResult::CycleLimitReached);
+		simulator.run(100);
 
 		assert(bus.read(100) == 123);
 		assert(cpu.getRegister(4) == 123);
@@ -501,10 +488,7 @@ int main()
 
 		cpu.reset();
 
-		RunResult result =
-			simulator.run(100);
-
-		assert(result == RunResult::CycleLimitReached);
+		simulator.run(100);
 		assert(cpu.getZeroFlag());
 	}
 	
@@ -558,10 +542,7 @@ int main()
 
 		cpu.reset();
 
-		RunResult result =
-			simulator.run(100);
-
-		assert(result == RunResult::CycleLimitReached);
+		simulator.run(100);
 		assert(cpu.getRegister(3) == 222);
 	}
 	
@@ -619,10 +600,7 @@ int main()
 
 		cpu.reset();
 
-		RunResult result =
-			simulator.run(100);
-
-		assert(result == RunResult::CycleLimitReached);
+		simulator.run(100);
 		assert(cpu.getRegister(1) == 15);
 	}
 
@@ -694,10 +672,7 @@ int main()
 
 		cpu.reset();
 
-		RunResult result =
-			simulator.run(100);
-
-		assert(result == RunResult::CycleLimitReached);
+		simulator.run(100);
 		assert(cpu.getRegister(1) == 0);
 		assert(cpu.getZeroFlag());
 	}

@@ -1850,21 +1850,34 @@ int main()
 		);
 	}
 	
+	// Minimum valid frequency
 	{
 		BoardConfig config;
-		config.clockHz = UINT64_MAX;
+		config.clockHz = 1;
 
 		Simulator simulator(config);
+	}
+
+	// Maximum valid frequency
+	{
+		BoardConfig config;
+		config.clockHz = 1'000'000'000ULL;
+
+		Simulator simulator(config);
+	}
+
+	// Above maximum is invalid
+	{
+		BoardConfig config;
+		config.clockHz = 1'000'000'001ULL;
 
 		bool threw = false;
 
 		try
 		{
-			simulator.advanceTime(
-				std::chrono::seconds(2)
-			);
+			Simulator simulator(config);
 		}
-		catch (const std::overflow_error&)
+		catch (const std::invalid_argument&)
 		{
 			threw = true;
 		}
