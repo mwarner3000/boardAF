@@ -5,7 +5,8 @@
 InterruptController::InterruptController(
     std::size_t interruptCount
 )
-    : pending(interruptCount, false)
+    : pending(interruptCount, false),
+      asserted(interruptCount, false)
 {
 }
 
@@ -48,33 +49,49 @@ bool InterruptController::isPending(
         );
     }
 
-    return pending[interruptNumber];
+    return pending[interruptNumber] ||
+			asserted[interruptNumber];
 }
 
 bool InterruptController::hasPending() const
 {
-    for (bool value : pending)
-    {
-        if (value)
-        {
-            return true;
-        }
-    }
+    for (std::size_t i = 0; i < pending.size(); ++i)
+	{
+		if (pending[i] || asserted[i])
+		{
+			return true;
+		}
+	}
 
-    return false;
+	return false;
 }
 
 std::size_t InterruptController::getNextPending() const
 {
     for (std::size_t i = 0; i < pending.size(); ++i)
-    {
-        if (pending[i])
-        {
-            return i;
-        }
-    }
+	{
+		if (pending[i] || asserted[i])
+		{
+			return i;
+		}
+	}
 
     throw std::runtime_error(
         "No interrupt is pending"
     );
+}
+
+void InterruptController::setLine(
+    std::size_t interruptNumber,
+    bool value
+)
+{
+    if (interruptNumber >= asserted.size())
+    {
+        throw std::out_of_range(
+            "Invalid interrupt number"
+        );
+    }
+
+    asserted[interruptNumber] = value;
 }

@@ -19,7 +19,13 @@ public:
     bool hasPending() const;
 
     std::size_t getNextPending() const;
+	
+	void setLine(
+		std::size_t interruptNumber,
+		bool asserted
+	);
 
 private:
     std::vector<bool> pending;
+	std::vector<bool> asserted;
 };

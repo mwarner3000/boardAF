@@ -25,6 +25,8 @@ public:
 	static constexpr std::uint32_t RegisterCount = 5;
 
 private:
+	void updateInterruptLine();
+	
     std::uint16_t counter;
     std::uint16_t period;
 

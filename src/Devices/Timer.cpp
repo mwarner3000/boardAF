@@ -58,27 +58,31 @@ void Timer::write(std::uint32_t address,
             break;
 
         case 2:
-            enabled = (value & 1u) != 0;
+			enabled = (value & 1u) != 0;
 
-            if (!enabled)
-            {
-                expired = false;
-            }
+			if (!enabled)
+			{
+				expired = false;
+			}
 
-            break;
+			updateInterruptLine();
+			break;
 
         case 3:
-            // Writing 1 clears the expired flag.
-            if ((value & 1u) != 0)
-            {
-                expired = false;
-            }
+			// Writing 1 clears the expired flag.
+			if ((value & 1u) != 0)
+			{
+				expired = false;
+				updateInterruptLine();
+			}
 
-            break;
+			break;
 			
 		case 4:
 			interruptEnabled =
 				(value & 1u) != 0;
+
+			updateInterruptLine();
 			break;
 
         default:
@@ -102,8 +106,14 @@ void Timer::tick(std::uint64_t /*cycle*/)
     {
         counter = 0;
         expired = true;
-
-        if (interruptEnabled)
-            interruptController.request(interruptNumber);
+		updateInterruptLine();
     }
+}
+
+void Timer::updateInterruptLine()
+{
+    interruptController.setLine(
+        interruptNumber,
+        expired && interruptEnabled
+    );
 }

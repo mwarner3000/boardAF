@@ -6,27 +6,35 @@
 namespace
 {
     std::uint32_t validateRAMSize(const BoardConfig& config)
-    {
-        if (config.ramWords == 0)
-        {
-            throw std::invalid_argument(
-                "Board RAM size must be greater than zero"
-            );
-        }
+	{
+		if (config.ramWords == 0)
+		{
+			throw std::invalid_argument(
+				"RAM size must be greater than zero"
+			);
+		}
 
-        const std::uint64_t lastAddress =
-            static_cast<std::uint64_t>(config.ramBase) +
-            static_cast<std::uint64_t>(config.ramWords) - 1;
+		if (config.ramWords > UINT32_MAX)
+		{
+			throw std::invalid_argument(
+				"RAM size exceeds supported range"
+			);
+		}
 
-        if (lastAddress > UINT32_MAX)
-        {
-            throw std::invalid_argument(
-                "Board RAM exceeds the 32-bit address space"
-            );
-        }
+		if (
+			config.ramWords - 1 >
+			UINT32_MAX - config.ramBase
+		)
+		{
+			throw std::invalid_argument(
+				"RAM address range exceeds 32-bit address space"
+			);
+		}
 
-        return static_cast<std::uint32_t>(config.ramWords);
-    }
+		return static_cast<std::uint32_t>(
+			config.ramWords
+		);
+	}
 }
 
 Simulator::Simulator()

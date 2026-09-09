@@ -226,6 +226,58 @@ int main()
 		assert(timer.read(0) == 0); // COUNTER
 		assert(timer.read(3) == 0); // EXPIRED
 	}
+	
+	{
+		InterruptController controller(8);
+		Timer timer(controller, 0);
+
+		timer.write(1, 2); // PERIOD
+		timer.write(2, 1); // ENABLE
+		timer.write(4, 1); // INTERRUPT_ENABLE
+
+		timer.tick(1);
+		timer.tick(2);
+
+		assert(timer.read(3) == 1);
+		assert(controller.isPending(0));
+
+		// Simulate CPU acknowledgement.
+		controller.clear(0);
+
+		// Timer is still asserting its IRQ.
+		assert(controller.isPending(0));
+
+		// Firmware clears EXPIRED.
+		timer.write(3, 1);
+
+		assert(timer.read(3) == 0);
+		assert(!controller.isPending(0));
+	}
+	
+	{
+		InterruptController controller(8);
+		Timer timer(controller, 0);
+
+		timer.write(1, 2); // PERIOD
+		timer.write(2, 1); // ENABLE
+
+		// Interrupt remains disabled.
+		timer.tick(1);
+		timer.tick(2);
+
+		assert(timer.read(3) == 1);
+		assert(!controller.isPending(0));
+
+		// Existing EXPIRED condition should now assert IRQ.
+		timer.write(4, 1);
+
+		assert(controller.isPending(0));
+
+		// Disabling interrupt should immediately deassert it.
+		timer.write(4, 0);
+
+		assert(!controller.isPending(0));
+	}
 
     std::cout << "Timer tests passed.\n";
 
