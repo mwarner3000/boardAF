@@ -166,6 +166,7 @@ void ADC::write(
 			if (value & (1u << 3))
 				invalidChannel = false;
 
+			updateInterruptLine();
 			return;
 			
 		case 3:
@@ -174,6 +175,7 @@ void ADC::write(
 	
 		case 5:
 			interruptEnable = (value != 0);
+			updateInterruptLine();
 			return;
 			
 		default:
@@ -204,13 +206,8 @@ void ADC::tick(std::uint64_t cycle)
 
 	complete = true;
 	busy = false;
-	
-	if (interruptEnable)
-	{
-		interruptController.request(
-			config.interruptNumber
-		);
-	}
+
+	updateInterruptLine();
 }
 
 std::uint16_t ADC::convertSampleToCode() const
@@ -233,4 +230,12 @@ std::uint16_t ADC::convertSampleToCode() const
 	return static_cast<std::uint16_t>(
 		std::round(scaled)
 	);
+}
+
+void ADC::updateInterruptLine()
+{
+    interruptController.setLine(
+        config.interruptNumber,
+        complete && interruptEnable
+    );
 }

@@ -359,5 +359,116 @@ int main()
 	//verifyassert(adc11.read(3) == 614);
 	assert(adc11.read(4) == 1);
 	
+	{
+		ADCConfig config;
+
+		// Use the same GPIO constructor/setup
+		// that your existing ADC tests use.
+		GPIO gpio(8, 5.0, 2.5);
+
+		InterruptController interruptController(8);
+
+		ADC adc(
+			config,
+			gpio,
+			interruptController
+		);
+
+		adc.write(5, 1); // INTERRUPT_ENABLE
+		adc.write(0, 0); // CHANNEL
+		adc.write(1, 1); // START
+
+		for (std::uint32_t i = 0;
+			 i < config.conversionCycles;
+			 ++i)
+		{
+			adc.tick(i);
+		}
+
+		assert(
+			(adc.read(2) & (1u << 1)) != 0
+		);
+
+		assert(
+			interruptController.isPending(
+				config.interruptNumber
+			)
+		);
+
+		// Simulate CPU acknowledgement.
+		interruptController.clear(
+			config.interruptNumber
+		);
+
+		// COMPLETE is still asserted.
+		assert(
+			interruptController.isPending(
+				config.interruptNumber
+			)
+		);
+
+		// Firmware clears COMPLETE.
+		adc.write(2, (1u << 1));
+
+		assert(
+			!interruptController.isPending(
+				config.interruptNumber
+			)
+		);
+	}
+	
+	{
+		ADCConfig config;
+
+		GPIO gpio(8, 5.0, 2.5);
+
+		InterruptController interruptController(8);
+
+		ADC adc(
+			config,
+			gpio,
+			interruptController
+		);
+
+		adc.write(0, 0); // CHANNEL
+		adc.write(1, 1); // START
+
+		for (std::uint32_t i = 0;
+			 i < config.conversionCycles;
+			 ++i)
+		{
+			adc.tick(i);
+		}
+
+		// Conversion finished, but IRQ is disabled.
+		assert(
+			(adc.read(2) & (1u << 1)) != 0
+		);
+
+		assert(
+			!interruptController.isPending(
+				config.interruptNumber
+			)
+		);
+
+		// Enable IRQ while COMPLETE is already set.
+		adc.write(5, 1);
+
+		assert(
+			interruptController.isPending(
+				config.interruptNumber
+			)
+		);
+
+		// Disable IRQ again.
+		adc.write(5, 0);
+
+		assert(
+			!interruptController.isPending(
+				config.interruptNumber
+			)
+		);
+	}
+
     return 0;
 }

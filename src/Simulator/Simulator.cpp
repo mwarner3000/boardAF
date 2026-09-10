@@ -374,3 +374,30 @@ const ADC& Simulator::getADC(std::size_t index) const
 {
     return adcs.at(index);
 }
+
+void Simulator::loadFirmware(
+    const std::vector<std::uint32_t>& firmware
+)
+{
+    if (firmware.size() > config.ramWords)
+    {
+        throw std::invalid_argument(
+            "Firmware image does not fit in configured RAM"
+        );
+    }
+
+    if (config.ramBase != 0)
+    {
+        throw std::invalid_argument(
+            "Firmware loading requires RAM to begin at address 0"
+        );
+    }
+
+    for (std::size_t i = 0; i < firmware.size(); ++i)
+    {
+        ram.write(
+            static_cast<std::uint32_t>(i),
+            firmware[i]
+        );
+    }
+}

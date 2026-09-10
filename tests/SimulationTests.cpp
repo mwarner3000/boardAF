@@ -1885,6 +1885,60 @@ int main()
 		assert(threw);
 	}
 	
+	{
+		Simulator simulator;
+
+		std::vector<std::uint32_t> firmware = {
+			SimpleISA::encode(
+				SimpleISA::Opcode::MOVI,
+				0,
+				0,
+				42
+			),
+			SimpleISA::encode(
+				SimpleISA::Opcode::HALT
+			)
+		};
+
+		simulator.loadFirmware(firmware);
+
+		simulator.run(2);
+
+		assert(
+			simulator.getCPU().getRegister(0) == 42
+		);
+
+		assert(
+			simulator.getCPU().isHalted()
+		);
+	}
+	
+	{
+		BoardConfig config;
+		config.ramWords = 2;
+
+		Simulator simulator(config);
+
+		std::vector<std::uint32_t> firmware = {
+			0,
+			0,
+			0
+		};
+
+		bool threw = false;
+
+		try
+		{
+			simulator.loadFirmware(firmware);
+		}
+		catch (const std::invalid_argument&)
+		{
+			threw = true;
+		}
+
+		assert(threw);
+	}
+	
     std::cout << "Simulation tests passed.\n";
 
     return 0;

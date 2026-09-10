@@ -46,4 +46,6 @@ private:
 	
 	std::uint16_t convertSampleToCode() const;
 	
+	void updateInterruptLine();
+	
 };

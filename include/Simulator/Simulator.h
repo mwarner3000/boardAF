@@ -62,6 +62,10 @@ public:
 	const ADC& getADC() const;
 	ADC& getADC(std::size_t index);
 	const ADC& getADC(std::size_t index) const;
+	
+	void loadFirmware(
+		const std::vector<std::uint32_t>& firmware
+	);
 
 private:
     BoardConfig config;
