@@ -1939,6 +1939,456 @@ int main()
 		assert(threw);
 	}
 	
+	{
+		std::vector<std::uint32_t> firmware = {
+
+			// Select GPIO pin 1
+			SimpleISA::encode(
+				SimpleISA::Opcode::MOVI,
+				0, 0, 1
+			),
+
+			SimpleISA::encode(
+				SimpleISA::Opcode::STORE,
+				0, 0, 0x1000
+			),
+
+			// Configure GPIO pin 1 as output
+			SimpleISA::encode(
+				SimpleISA::Opcode::MOVI,
+				0, 0, 1
+			),
+
+			SimpleISA::encode(
+				SimpleISA::Opcode::STORE,
+				0, 0, 0x1001
+			),
+
+			// Select ADC channel 0
+			SimpleISA::encode(
+				SimpleISA::Opcode::MOVI,
+				0, 0, 0
+			),
+
+			SimpleISA::encode(
+				SimpleISA::Opcode::STORE,
+				0, 0, 0x3000
+			),
+
+			// Enable ADC interrupt
+			SimpleISA::encode(
+				SimpleISA::Opcode::MOVI,
+				0, 0, 1
+			),
+
+			SimpleISA::encode(
+				SimpleISA::Opcode::STORE,
+				0, 0, 0x3005
+			),
+
+			// Start ADC conversion
+			SimpleISA::encode(
+				SimpleISA::Opcode::MOVI,
+				0, 0, 1
+			),
+
+			SimpleISA::encode(
+				SimpleISA::Opcode::STORE,
+				0, 0, 0x3001
+			),
+
+			// Wait for interrupt
+			SimpleISA::encode(
+				SimpleISA::Opcode::HALT
+			)
+		};
+		
+		Simulator simulator;
+
+		simulator.setPinVoltage(0, 4.0);
+
+		simulator.loadFirmware(firmware);
+
+		simulator.run(11);
+
+		assert(simulator.getCPU().isHalted());
+		
+		assert(
+			simulator.getGPIO()
+				.getPin(1)
+				.getDirection() == PinDirection::Output
+		);
+
+		assert(
+			simulator.getADC().read(0) == 0
+		);
+
+		assert(
+			simulator.getADC().read(5) == 1
+		);
+
+		assert(
+			(simulator.getADC().read(2) & 1u) != 0
+		);
+	}
+	
+	{
+		std::vector<std::uint32_t> firmware(
+			0x012B,
+			SimpleISA::encode(SimpleISA::Opcode::NOP)
+		);
+		
+		firmware[0x0000] =
+		SimpleISA::encode(
+			SimpleISA::Opcode::MOVI,
+			0, 0, 1
+		);
+
+		firmware[0x0001] =
+			SimpleISA::encode(
+				SimpleISA::Opcode::STORE,
+				0, 0, 0x1000
+			);
+
+		firmware[0x0002] =
+			SimpleISA::encode(
+				SimpleISA::Opcode::MOVI,
+				0, 0, 1
+			);
+
+		firmware[0x0003] =
+			SimpleISA::encode(
+				SimpleISA::Opcode::STORE,
+				0, 0, 0x1001
+			);
+
+		firmware[0x0004] =
+			SimpleISA::encode(
+				SimpleISA::Opcode::MOVI,
+				0, 0, 0
+			);
+
+		firmware[0x0005] =
+			SimpleISA::encode(
+				SimpleISA::Opcode::STORE,
+				0, 0, 0x3000
+			);
+
+		firmware[0x0006] =
+			SimpleISA::encode(
+				SimpleISA::Opcode::MOVI,
+				0, 0, 1
+			);
+
+		firmware[0x0007] =
+			SimpleISA::encode(
+				SimpleISA::Opcode::STORE,
+				0, 0, 0x3005
+			);
+
+		firmware[0x0008] =
+			SimpleISA::encode(
+				SimpleISA::Opcode::MOVI,
+				0, 0, 1
+			);
+
+		firmware[0x0009] =
+			SimpleISA::encode(
+				SimpleISA::Opcode::STORE,
+				0, 0, 0x3001
+			);
+
+		firmware[0x000A] =
+			SimpleISA::encode(
+				SimpleISA::Opcode::HALT
+			);
+
+		// After RETI, return here and HALT again.
+		firmware[0x000B] =
+			SimpleISA::encode(
+				SimpleISA::Opcode::JMP,
+				0, 0, 0x000A
+			);
+			
+		firmware[0x0102] = 0x0120;
+		
+		firmware[0x0120] =
+			SimpleISA::encode(
+				SimpleISA::Opcode::LOAD,
+				1, 0, 0x3003
+			);
+
+		firmware[0x0121] =
+			SimpleISA::encode(
+				SimpleISA::Opcode::CMPI,
+				1, 0, 818
+			);
+
+		firmware[0x0122] =
+			SimpleISA::encode(
+				SimpleISA::Opcode::JZ,
+				0, 0, 0x0126
+			);
+
+		// LOW path
+		firmware[0x0123] =
+			SimpleISA::encode(
+				SimpleISA::Opcode::MOVI,
+				0, 0, 0
+			);
+
+		firmware[0x0124] =
+			SimpleISA::encode(
+				SimpleISA::Opcode::STORE,
+				0, 0, 0x1002
+			);
+
+		firmware[0x0125] =
+			SimpleISA::encode(
+				SimpleISA::Opcode::JMP,
+				0, 0, 0x0128
+			);
+
+		// HIGH path
+		firmware[0x0126] =
+			SimpleISA::encode(
+				SimpleISA::Opcode::MOVI,
+				0, 0, 1
+			);
+
+		firmware[0x0127] =
+			SimpleISA::encode(
+				SimpleISA::Opcode::STORE,
+				0, 0, 0x1002
+			);
+
+		// Clear ADC COMPLETE (STATUS bit 1)
+		firmware[0x0128] =
+			SimpleISA::encode(
+				SimpleISA::Opcode::MOVI,
+				0, 0, 2
+			);
+
+		firmware[0x0129] =
+			SimpleISA::encode(
+				SimpleISA::Opcode::STORE,
+				0, 0, 0x3002
+			);
+
+		firmware[0x012A] =
+			SimpleISA::encode(
+				SimpleISA::Opcode::RETI
+			);
+			
+		Simulator simulator;
+
+		simulator.setPinVoltage(0, 4.0);
+		simulator.loadFirmware(firmware);
+
+		simulator.run(50);
+		
+		assert(
+			simulator.getGPIO()
+				.getPin(1)
+				.getDirection() ==
+				PinDirection::Output
+		);
+
+		assert(
+			simulator.getGPIO()
+				.getPin(1)
+				.getOutputLatch()
+		);
+
+		assert(
+			simulator.getCPU().isHalted()
+		);
+
+		assert(
+			!simulator.getInterruptController()
+				.isPending(
+					simulator.getConfig()
+						.adcs[0]
+						.interruptNumber
+				)
+		);
+	}
+	
+	{
+		std::vector<std::uint32_t> firmware(
+			0x012B,
+			SimpleISA::encode(SimpleISA::Opcode::NOP)
+		);
+		
+		firmware[0x0000] =
+		SimpleISA::encode(
+			SimpleISA::Opcode::MOVI,
+			0, 0, 1
+		);
+
+		firmware[0x0001] =
+			SimpleISA::encode(
+				SimpleISA::Opcode::STORE,
+				0, 0, 0x1000
+			);
+
+		firmware[0x0002] =
+			SimpleISA::encode(
+				SimpleISA::Opcode::MOVI,
+				0, 0, 1
+			);
+
+		firmware[0x0003] =
+			SimpleISA::encode(
+				SimpleISA::Opcode::STORE,
+				0, 0, 0x1001
+			);
+
+		firmware[0x0004] =
+			SimpleISA::encode(
+				SimpleISA::Opcode::MOVI,
+				0, 0, 0
+			);
+
+		firmware[0x0005] =
+			SimpleISA::encode(
+				SimpleISA::Opcode::STORE,
+				0, 0, 0x3000
+			);
+
+		firmware[0x0006] =
+			SimpleISA::encode(
+				SimpleISA::Opcode::MOVI,
+				0, 0, 1
+			);
+
+		firmware[0x0007] =
+			SimpleISA::encode(
+				SimpleISA::Opcode::STORE,
+				0, 0, 0x3005
+			);
+
+		firmware[0x0008] =
+			SimpleISA::encode(
+				SimpleISA::Opcode::MOVI,
+				0, 0, 1
+			);
+
+		firmware[0x0009] =
+			SimpleISA::encode(
+				SimpleISA::Opcode::STORE,
+				0, 0, 0x3001
+			);
+
+		firmware[0x000A] =
+			SimpleISA::encode(
+				SimpleISA::Opcode::HALT
+			);
+
+		// After RETI, return here and HALT again.
+		firmware[0x000B] =
+			SimpleISA::encode(
+				SimpleISA::Opcode::JMP,
+				0, 0, 0x000A
+			);
+			
+		firmware[0x0102] = 0x0120;
+		
+		firmware[0x0120] =
+			SimpleISA::encode(
+				SimpleISA::Opcode::LOAD,
+				1, 0, 0x3003
+			);
+
+		firmware[0x0121] =
+			SimpleISA::encode(
+				SimpleISA::Opcode::CMPI,
+				1, 0, 818
+			);
+
+		firmware[0x0122] =
+			SimpleISA::encode(
+				SimpleISA::Opcode::JZ,
+				0, 0, 0x0126
+			);
+
+		// LOW path
+		firmware[0x0123] =
+			SimpleISA::encode(
+				SimpleISA::Opcode::MOVI,
+				0, 0, 0
+			);
+
+		firmware[0x0124] =
+			SimpleISA::encode(
+				SimpleISA::Opcode::STORE,
+				0, 0, 0x1002
+			);
+
+		firmware[0x0125] =
+			SimpleISA::encode(
+				SimpleISA::Opcode::JMP,
+				0, 0, 0x0128
+			);
+
+		// HIGH path
+		firmware[0x0126] =
+			SimpleISA::encode(
+				SimpleISA::Opcode::MOVI,
+				0, 0, 1
+			);
+
+		firmware[0x0127] =
+			SimpleISA::encode(
+				SimpleISA::Opcode::STORE,
+				0, 0, 0x1002
+			);
+
+		// Clear ADC COMPLETE (STATUS bit 1)
+		firmware[0x0128] =
+			SimpleISA::encode(
+				SimpleISA::Opcode::MOVI,
+				0, 0, 2
+			);
+
+		firmware[0x0129] =
+			SimpleISA::encode(
+				SimpleISA::Opcode::STORE,
+				0, 0, 0x3002
+			);
+
+		firmware[0x012A] =
+			SimpleISA::encode(
+				SimpleISA::Opcode::RETI
+			);
+			
+		Simulator simulator;
+
+		simulator.setPinVoltage(0, 1.0);
+		simulator.loadFirmware(firmware);
+
+		simulator.run(50);
+		
+		assert(
+			!simulator.getGPIO()
+				 .getPin(1)
+				 .getOutputLatch()
+		);
+
+		assert(
+			simulator.getCPU().isHalted()
+		);
+
+		assert(
+			!simulator.getInterruptController()
+				 .isPending(
+					 simulator.getConfig()
+						 .adcs[0]
+						 .interruptNumber
+				 )
+		);
+	}
+	
     std::cout << "Simulation tests passed.\n";
 
     return 0;

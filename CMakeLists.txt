@@ -46,6 +46,15 @@ target_link_libraries(
         MicroSimCore
 )
 
+add_executable(adc_gpio_interrupt_demo
+    examples/adc_gpio_interrupt_demo.cpp
+)
+
+target_link_libraries(adc_gpio_interrupt_demo
+    PRIVATE
+    MicroSimCore
+)
+
 target_include_directories(
     MicroSim
     PRIVATE
