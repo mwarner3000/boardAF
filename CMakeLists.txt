@@ -1,9 +1,9 @@
 cmake_minimum_required(VERSION 3.20)
 
 project(
-    MicroSim
-    VERSION 0.1.0
-    DESCRIPTION "A modular embedded systems simulation framework"
+    boardAF
+    VERSION 1.0.0
+    DESCRIPTION "Board Abstraction Framework for embedded systems simulation"
     LANGUAGES CXX
 )
 
@@ -12,7 +12,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 add_library(
-    MicroSimCore
+    boardAFCore
     src/Bus/Bus.cpp
     src/Memory/RAM.cpp
     src/Devices/GPIO.cpp
@@ -30,33 +30,35 @@ add_library(
 )
 
 target_include_directories(
-    MicroSimCore
+    boardAFCore
     PUBLIC
         ${PROJECT_SOURCE_DIR}/include
 )
 
 add_executable(
-    MicroSim
+    boardAF
     src/main.cpp
 )
 
 target_link_libraries(
-    MicroSim
+    boardAF
     PRIVATE
-        MicroSimCore
+        boardAFCore
 )
 
-add_executable(adc_gpio_interrupt_demo
+add_executable(
+    adc_gpio_interrupt_demo
     examples/adc_gpio_interrupt_demo.cpp
 )
 
-target_link_libraries(adc_gpio_interrupt_demo
+target_link_libraries(
+    adc_gpio_interrupt_demo
     PRIVATE
-    MicroSimCore
+        boardAFCore
 )
 
 target_include_directories(
-    MicroSim
+    boardAF
     PRIVATE
         ${PROJECT_SOURCE_DIR}/include
 )
@@ -71,7 +73,7 @@ add_executable(
 target_link_libraries(
     RAMTests
     PRIVATE
-        MicroSimCore
+        boardAFCore
 )
 
 add_test(
@@ -87,7 +89,7 @@ add_executable(
 target_link_libraries(
     BusTests
     PRIVATE
-        MicroSimCore
+        boardAFCore
 )
 
 add_test(
@@ -103,7 +105,7 @@ add_executable(
 target_link_libraries(
     GPIOTests
     PRIVATE
-        MicroSimCore
+        boardAFCore
 )
 
 add_test(
@@ -119,7 +121,7 @@ add_executable(
 target_link_libraries(
     TimerTests
     PRIVATE
-        MicroSimCore
+        boardAFCore
 )
 
 add_test(
@@ -135,7 +137,7 @@ add_executable(
 target_link_libraries(
     CPUTests
     PRIVATE
-        MicroSimCore
+        boardAFCore
 )
 
 add_test(
@@ -151,7 +153,7 @@ add_executable(
 target_link_libraries(
     SimulationTests
     PRIVATE
-        MicroSimCore
+        boardAFCore
 )
 
 add_test(
@@ -167,7 +169,7 @@ add_executable(
 target_link_libraries(
     InterruptControllerTests
     PRIVATE
-        MicroSimCore
+        boardAFCore
 )
 
 add_test(
@@ -183,7 +185,7 @@ add_executable(
 target_link_libraries(
     CANFrameTests
     PRIVATE
-        MicroSimCore
+        boardAFCore
 )
 
 add_test(
@@ -199,7 +201,7 @@ add_executable(
 target_link_libraries(
     CANBusTests
     PRIVATE
-        MicroSimCore
+        boardAFCore
 )
 
 add_test(
@@ -215,7 +217,7 @@ add_executable(
 target_link_libraries(
     CANControllerTests
     PRIVATE
-        MicroSimCore
+        boardAFCore
 )
 
 add_test(
@@ -231,7 +233,7 @@ add_executable(
 target_link_libraries(
     ADCTests
     PRIVATE
-        MicroSimCore
+        boardAFCore
 )
 
 add_test(
