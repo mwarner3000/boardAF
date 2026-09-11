@@ -36,17 +36,6 @@ target_include_directories(
 )
 
 add_executable(
-    boardAF
-    src/main.cpp
-)
-
-target_link_libraries(
-    boardAF
-    PRIVATE
-        boardAFCore
-)
-
-add_executable(
     adc_gpio_interrupt_demo
     examples/adc_gpio_interrupt_demo.cpp
 )
@@ -55,12 +44,6 @@ target_link_libraries(
     adc_gpio_interrupt_demo
     PRIVATE
         boardAFCore
-)
-
-target_include_directories(
-    boardAF
-    PRIVATE
-        ${PROJECT_SOURCE_DIR}/include
 )
 
 enable_testing()
